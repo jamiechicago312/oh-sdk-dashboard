@@ -7,7 +7,7 @@ A dashboard to track quantitative SDK success metrics from GitHub, npm, and PyPI
 - **Framework:** Next.js 14 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS + shadcn/ui
-- **Database:** Vercel Postgres + Drizzle ORM
+- **Database:** Supabase Postgres + Drizzle ORM
 - **Charts:** Recharts
 - **Deployment:** Vercel
 
@@ -28,7 +28,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 Create a `.env.local` file for local development:
 
 ```env
-# Database (Vercel Postgres)
+# Database (Supabase Postgres)
 DATABASE_URL=
 
 # GitHub API (optional - for higher rate limits)
@@ -39,12 +39,12 @@ GITHUB_TOKEN=
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes (for DB features) | Postgres connection string. Get this from Vercel Dashboard → Storage → Postgres |
+| `DATABASE_URL` | Yes (for DB features) | Supabase Postgres connection string. Get from [Supabase Dashboard](https://supabase.com/dashboard) → Project Settings → Database → Connection string |
 | `GITHUB_TOKEN` | No | GitHub Personal Access Token (no scopes needed for public repos). Increases API rate limit from 60 to 5,000 requests/hour. [Create one here](https://github.com/settings/tokens) |
 
 ## Database Setup
 
-This project uses [Drizzle ORM](https://orm.drizzle.team/) with Vercel Postgres.
+This project uses [Drizzle ORM](https://orm.drizzle.team/) with Supabase Postgres.
 
 ### Available Commands
 
@@ -64,9 +64,10 @@ npm run db:studio
 
 ### Initial Setup
 
-1. Create a Postgres database in [Vercel Dashboard](https://vercel.com/dashboard) → Storage → Create Database → Postgres
-2. Copy the connection string to `DATABASE_URL` in `.env.local`
-3. Push the schema to create tables:
+1. Create a project at [Supabase](https://supabase.com/dashboard) (free tier available)
+2. Go to Project Settings → Database → Connection string (URI)
+3. Copy the connection string to `DATABASE_URL` in `.env.local`
+4. Push the schema to create tables:
    ```bash
    npm run db:push
    ```
@@ -77,24 +78,20 @@ npm run db:studio
    - Go to [Vercel Dashboard](https://vercel.com/new)
    - Import this GitHub repository
 
-2. **Create Postgres Database**
-   - Go to Vercel Dashboard → Storage → Create Database → Postgres
-   - Connect it to your project
-   - `DATABASE_URL` will be automatically added to environment variables
-
-3. **Add Environment Variables**
+2. **Add Environment Variables**
    - Go to Project Settings → Environment Variables
+   - Add `DATABASE_URL` (from Supabase)
    - Add `GITHUB_TOKEN` (optional but recommended)
 
-4. **Run Database Migration**
+3. **Run Database Migration**
    - Run `npm run db:push` locally with production DATABASE_URL
 
-5. **Deploy**
+4. **Deploy**
    - Push to `main` branch to trigger deployment
 
 ## Learn More
 
 - [Next.js Documentation](https://nextjs.org/docs)
-- [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres)
+- [Supabase Documentation](https://supabase.com/docs)
 - [Drizzle ORM](https://orm.drizzle.team/)
 - [shadcn/ui Components](https://ui.shadcn.com/)

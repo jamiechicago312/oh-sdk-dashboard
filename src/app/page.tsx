@@ -120,7 +120,7 @@ export default async function Home() {
 
         {/* PyPI Metrics */}
         <h2 className="text-lg font-semibold text-gray-700 mb-4">🐍 PyPI Downloads</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <MetricsCard 
             title="Weekly Downloads" 
             value={pypi?.weeklyDownloads ?? '--'} 
@@ -138,6 +138,12 @@ export default async function Home() {
             title="Last 30 Days" 
             value={pypi?.monthlyDownloads ?? '--'} 
             icon="📆"
+            loading={!pypi && !error}
+          />
+          <MetricsCard 
+            title="All Time" 
+            value={pypi?.allTimeDownloads ?? '--'} 
+            icon="🏆"
             loading={!pypi && !error}
           />
         </div>

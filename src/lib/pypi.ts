@@ -10,10 +10,21 @@ interface PyPIStatsResponse {
   type: string;
 }
 
+interface PyPIOverallResponse {
+  data: Array<{
+    category: string;
+    date: string;
+    downloads: number;
+  }>;
+  package: string;
+  type: string;
+}
+
 export interface PyPIMetrics {
   weeklyDownloads: number;
   dailyDownloads: number;
   monthlyDownloads: number;
+  allTimeDownloads: number;
   package: string;
 }
 
@@ -21,29 +32,40 @@ export interface PyPIMetrics {
  * Fetch download counts for a PyPI package
  */
 export async function getPyPIDownloads(packageName: string): Promise<PyPIMetrics> {
-  const url = `${PYPISTATS_API_BASE}/packages/${encodeURIComponent(packageName)}/recent`;
+  const [recentResponse, overallResponse] = await Promise.all([
+    fetch(`${PYPISTATS_API_BASE}/packages/${encodeURIComponent(packageName)}/recent`, {
+      headers: { 'Accept': 'application/json' },
+    }),
+    fetch(`${PYPISTATS_API_BASE}/packages/${encodeURIComponent(packageName)}/overall`, {
+      headers: { 'Accept': 'application/json' },
+    }),
+  ]);
   
-  const response = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-    },
-  });
-  
-  if (response.status === 404) {
+  if (recentResponse.status === 404) {
     throw new Error(`PyPI package not found: ${packageName}`);
   }
   
-  if (!response.ok) {
-    throw new Error(`PyPI API error: ${response.status} ${response.statusText}`);
+  if (!recentResponse.ok) {
+    throw new Error(`PyPI API error: ${recentResponse.status} ${recentResponse.statusText}`);
   }
   
-  const data: PyPIStatsResponse = await response.json();
+  const recentData: PyPIStatsResponse = await recentResponse.json();
+  
+  // Calculate all-time downloads (without mirrors to avoid double counting)
+  let allTimeDownloads = 0;
+  if (overallResponse.ok) {
+    const overallData: PyPIOverallResponse = await overallResponse.json();
+    allTimeDownloads = overallData.data
+      .filter(d => d.category === 'without_mirrors')
+      .reduce((sum, d) => sum + d.downloads, 0);
+  }
   
   return {
-    weeklyDownloads: data.data.last_week,
-    dailyDownloads: data.data.last_day,
-    monthlyDownloads: data.data.last_month,
-    package: data.package,
+    weeklyDownloads: recentData.data.last_week,
+    dailyDownloads: recentData.data.last_day,
+    monthlyDownloads: recentData.data.last_month,
+    allTimeDownloads,
+    package: recentData.package,
   };
 }
 

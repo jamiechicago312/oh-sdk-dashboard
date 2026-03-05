@@ -125,7 +125,6 @@ export default async function Home() {
             title="Weekly Downloads" 
             value={pypi?.weeklyDownloads ?? '--'} 
             icon="📈"
-            highlight
             loading={!pypi && !error}
           />
           <MetricsCard 

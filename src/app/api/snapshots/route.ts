@@ -31,20 +31,30 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/snapshots - Collect and save a new snapshot
- * This should only be called once per day (by cron job)
+ * 
+ * This should only be called once per day (by cron job).
+ * If a snapshot already exists for today, it SKIPS entirely
+ * (no API calls to GitHub/PyPI, no DB writes) to minimize costs.
  */
 export async function POST() {
   try {
     const result = await collectAndSaveSnapshot();
 
+    if (result.skipped) {
+      return NextResponse.json({
+        success: true,
+        message: `Snapshot already exists for ${result.date} - skipped`,
+        date: result.date,
+        skipped: true,
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      message: result.isNew 
-        ? `New snapshot created for ${result.date}` 
-        : `Snapshot updated for ${result.date}`,
+      message: `New snapshot created for ${result.date}`,
       snapshotId: result.snapshotId,
       date: result.date,
-      isNew: result.isNew,
+      skipped: false,
     });
   } catch (error) {
     console.error('Failed to save snapshot:', error);

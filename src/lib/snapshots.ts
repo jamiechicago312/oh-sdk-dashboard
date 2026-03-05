@@ -67,20 +67,41 @@ export async function collectCurrentMetrics(): Promise<SnapshotData> {
 }
 
 /**
+ * Check if a snapshot already exists for today
+ */
+export async function hasSnapshotForToday(sdkId: number): Promise<boolean> {
+  const today = new Date().toISOString().split('T')[0];
+  
+  const existing = await db
+    .select({ id: metricsSnapshots.id })
+    .from(metricsSnapshots)
+    .where(
+      and(
+        eq(metricsSnapshots.sdkId, sdkId),
+        eq(metricsSnapshots.date, today)
+      )
+    )
+    .limit(1);
+
+  return existing.length > 0;
+}
+
+/**
  * Save a daily snapshot to the database.
- * Uses upsert logic to ensure only one snapshot per SDK per day.
+ * Only creates a new snapshot if one doesn't exist for today.
+ * Returns null if snapshot already exists (to avoid unnecessary DB writes).
  */
 export async function saveDailySnapshot(
   sdkId: number,
   data: SnapshotData,
   date?: Date
-): Promise<{ isNew: boolean; snapshotId: number }> {
+): Promise<{ isNew: boolean; snapshotId: number | null; skipped: boolean }> {
   const snapshotDate = date || new Date();
   const dateString = snapshotDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
   // Check if snapshot already exists for this date
   const existing = await db
-    .select()
+    .select({ id: metricsSnapshots.id })
     .from(metricsSnapshots)
     .where(
       and(
@@ -90,23 +111,9 @@ export async function saveDailySnapshot(
     )
     .limit(1);
 
+  // If snapshot exists, skip - don't update (saves DB costs)
   if (existing.length > 0) {
-    // Update existing snapshot
-    await db
-      .update(metricsSnapshots)
-      .set({
-        githubStars: data.githubStars,
-        githubForks: data.githubForks,
-        githubActiveForks: data.githubActiveForks,
-        githubContributors: data.githubContributors,
-        githubRepeatContributors: data.githubRepeatContributors,
-        githubDependentRepos: data.githubDependentRepos,
-        npmDownloadsWeekly: data.npmDownloadsWeekly,
-        pypiDownloadsWeekly: data.pypiDownloadsWeekly,
-      })
-      .where(eq(metricsSnapshots.id, existing[0].id));
-
-    return { isNew: false, snapshotId: existing[0].id };
+    return { isNew: false, snapshotId: existing[0].id, skipped: true };
   }
 
   // Insert new snapshot
@@ -126,28 +133,51 @@ export async function saveDailySnapshot(
     })
     .returning({ id: metricsSnapshots.id });
 
-  return { isNew: true, snapshotId: result[0].id };
+  return { isNew: true, snapshotId: result[0].id, skipped: false };
 }
 
 /**
  * Collect and save today's snapshot (main entry point)
+ * 
+ * IMPORTANT: This only writes to the database ONCE per day.
+ * If a snapshot already exists for today, it skips entirely
+ * (no API calls, no DB writes) to minimize costs.
  */
 export async function collectAndSaveSnapshot(): Promise<{
   success: boolean;
   isNew: boolean;
-  snapshotId: number;
+  skipped: boolean;
+  snapshotId: number | null;
   date: string;
 }> {
-  const sdkId = await getOrCreateSDK();
-  const metrics = await collectCurrentMetrics();
   const today = new Date();
-  const { isNew, snapshotId } = await saveDailySnapshot(sdkId, metrics, today);
+  const dateString = today.toISOString().split('T')[0];
+  
+  const sdkId = await getOrCreateSDK();
+  
+  // Check if snapshot already exists BEFORE fetching from APIs
+  // This avoids unnecessary API calls if we already have today's data
+  const alreadyExists = await hasSnapshotForToday(sdkId);
+  if (alreadyExists) {
+    return {
+      success: true,
+      isNew: false,
+      skipped: true,
+      snapshotId: null,
+      date: dateString,
+    };
+  }
+  
+  // Only fetch from APIs if we need to create a new snapshot
+  const metrics = await collectCurrentMetrics();
+  const { isNew, snapshotId, skipped } = await saveDailySnapshot(sdkId, metrics, today);
 
   return {
     success: true,
     isNew,
+    skipped,
     snapshotId,
-    date: today.toISOString().split('T')[0],
+    date: dateString,
   };
 }
 

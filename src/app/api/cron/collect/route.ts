@@ -5,28 +5,11 @@ import { collectAndSaveSnapshot } from '@/lib/snapshots';
 export const dynamic = 'force-dynamic';
 
 /**
- * POST /api/cron/collect - Daily metrics collection endpoint
- * 
- * Called by Vercel Cron once per day at 6:00 AM UTC.
- * Collects metrics from GitHub/PyPI and stores a daily snapshot.
- * 
- * Security: Verifies the request is from Vercel Cron via CRON_SECRET.
+ * Handle cron collection - shared logic for both GET and POST
  */
-export async function POST(request: Request) {
+async function handleCronCollection(source: 'scheduled' | 'manual'): Promise<NextResponse> {
   try {
-    // Verify the request is from Vercel Cron
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-    
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      console.error('Unauthorized cron request - invalid or missing authorization');
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    console.log(`[Cron] Starting daily metrics collection at ${new Date().toISOString()}`);
+    console.log(`[Cron] Starting daily metrics collection (${source}) at ${new Date().toISOString()}`);
     
     const result = await collectAndSaveSnapshot();
 
@@ -63,14 +46,42 @@ export async function POST(request: Request) {
 }
 
 /**
- * GET /api/cron/collect - Health check for the cron endpoint
+ * GET /api/cron/collect - Vercel Cron handler
+ * 
+ * Called by Vercel Cron once per day at 6:00 AM UTC.
+ * Collects metrics from GitHub/PyPI and stores a daily snapshot.
  */
-export async function GET() {
-  return NextResponse.json({
-    status: 'ok',
-    endpoint: '/api/cron/collect',
-    method: 'POST',
-    schedule: '0 6 * * * (daily at 6:00 AM UTC)',
-    description: 'Collects SDK metrics and stores daily snapshot',
-  });
+export async function GET(request: Request) {
+  const authHeader = request.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    console.error('Unauthorized cron request - invalid or missing authorization');
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  return handleCronCollection('scheduled');
+}
+
+/**
+ * POST /api/cron/collect - Manual trigger
+ * 
+ * Allows manual triggering of metrics collection from Vercel dashboard.
+ */
+export async function POST(request: Request) {
+  const authHeader = request.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    console.error('Unauthorized cron request - invalid or missing authorization');
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  return handleCronCollection('manual');
 }

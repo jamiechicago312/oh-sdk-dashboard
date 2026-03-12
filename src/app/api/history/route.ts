@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { sdks, metricsSnapshots } from '@/lib/schema';
 import { eq, desc, and, gte } from 'drizzle-orm';
+import { SDK_CONFIG } from '@/lib/sdk-config';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +21,25 @@ export async function GET(request: NextRequest) {
 
     const db = getDb();
     
+    // If database is not available, return empty data
+    if (!db) {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - period);
+      return NextResponse.json({
+        period,
+        data: {
+          githubStars: [],
+          githubForks: [],
+          pypiDownloads: [],
+        },
+        snapshotCount: 0,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        message: 'Database not available. Please configure DATABASE_URL.',
+      });
+    }
+    
     // Calculate date range
     const endDate = new Date();
     const startDate = new Date();
@@ -31,16 +51,78 @@ export async function GET(request: NextRequest) {
     if (sdkRepo) {
       const [owner, repo] = sdkRepo.split('/');
       if (owner && repo) {
+        try {
+          const sdk = await db
+            .select()
+            .from(sdks)
+            .where(eq(sdks.githubRepo, `${owner}/${repo}`))
+            .limit(1);
+          
+          if (sdk.length > 0) {
+            sdkId = sdk[0].id;
+          }
+        } catch (dbError) {
+          console.error('Database query error:', dbError);
+          // Return empty data if DB query fails
+          return NextResponse.json({
+            period,
+            data: {
+              githubStars: [],
+              githubForks: [],
+              pypiDownloads: [],
+            },
+            snapshotCount: 0,
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0],
+            message: 'Database unavailable or empty.',
+          });
+        }
+      }
+    } else {
+      // Default: Look up the SDK from SDK_CONFIG
+      const defaultSdkRepo = `${SDK_CONFIG.github.owner}/${SDK_CONFIG.github.repo}`;
+      try {
         const sdk = await db
           .select()
           .from(sdks)
-          .where(eq(sdks.githubRepo, `${owner}/${repo}`))
+          .where(eq(sdks.githubRepo, defaultSdkRepo))
           .limit(1);
         
         if (sdk.length > 0) {
           sdkId = sdk[0].id;
         }
+      } catch (dbError) {
+        console.error('Database query error:', dbError);
+        // Return empty data if DB query fails
+        return NextResponse.json({
+          period,
+          data: {
+            githubStars: [],
+            githubForks: [],
+            pypiDownloads: [],
+          },
+          snapshotCount: 0,
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+          message: 'Database unavailable or empty.',
+        });
       }
+    }
+
+    // If no SDK found, return empty data
+    if (!sdkId) {
+      return NextResponse.json({
+        period,
+        data: {
+          githubStars: [],
+          githubForks: [],
+          pypiDownloads: [],
+        },
+        snapshotCount: 0,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        message: 'No SDK found in database. Run cron job to collect initial snapshot.',
+      });
     }
 
     // Build query

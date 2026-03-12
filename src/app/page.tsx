@@ -3,7 +3,8 @@ import { getAllGitHubMetrics } from '@/lib/github';
 import { getPyPIDownloads } from '@/lib/pypi';
 import { MetricsCard } from '@/components/metrics-card';
 import { RefreshCountdown } from '@/components/refresh-countdown';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrendCharts } from '@/components/trend-charts';
+import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 
 async function getMetrics() {
@@ -147,30 +148,9 @@ export default async function Home() {
           />
         </div>
 
-        {/* Charts Placeholder */}
+        {/* Charts */}
         <h2 className="text-lg font-semibold text-gray-700 mb-4">📈 Trends Over Time</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">GitHub Stars Growth</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64 bg-muted/50 rounded-lg flex items-center justify-center text-muted-foreground">
-                📈 Coming soon - Historical data collection required
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">PyPI Weekly Downloads</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64 bg-muted/50 rounded-lg flex items-center justify-center text-muted-foreground">
-                📊 Coming soon - Historical data collection required
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <TrendCharts initialPeriod={30} />
       </main>
 
       {/* Footer */}

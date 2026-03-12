@@ -4,23 +4,24 @@ import * as schema from './schema';
 
 // Lazy initialization to avoid build-time errors
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+let _initAttempted = false;
 
 export function getDb() {
-  if (!_db) {
+  if (!_initAttempted) {
+    _initAttempted = true;
     if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL environment variable is not set');
+      console.warn('DATABASE_URL environment variable is not set. Database features will be disabled.');
+      return null;
     }
-    // prepare: false is required for Supabase connection pooler (Supavisor)
-    // See: https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler
-    const client = postgres(process.env.DATABASE_URL, { prepare: false });
-    _db = drizzle(client, { schema });
+    try {
+      // prepare: false is required for Supabase connection pooler (Supavisor)
+      // See: https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler
+      const client = postgres(process.env.DATABASE_URL, { prepare: false });
+      _db = drizzle(client, { schema });
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+      return null;
+    }
   }
   return _db;
 }
-
-// For backwards compatibility
-export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
-  get(_, prop) {
-    return getDb()[prop as keyof ReturnType<typeof drizzle<typeof schema>>];
-  },
-});

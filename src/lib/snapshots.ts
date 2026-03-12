@@ -1,4 +1,4 @@
-import { db } from './db';
+import { getDb } from './db';
 import { sdks, metricsSnapshots } from './schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { getAllGitHubMetrics } from './github';
@@ -20,6 +20,9 @@ export interface SnapshotData {
  * Get or create the SDK record in the database
  */
 export async function getOrCreateSDK(): Promise<number> {
+  const db = getDb();
+  if (!db) throw new Error('Database not available');
+  
   // Check if SDK already exists
   const existing = await db
     .select()
@@ -70,6 +73,9 @@ export async function collectCurrentMetrics(): Promise<SnapshotData> {
  * Check if a snapshot already exists for today
  */
 export async function hasSnapshotForToday(sdkId: number): Promise<boolean> {
+  const db = getDb();
+  if (!db) return false;
+  
   const today = new Date().toISOString().split('T')[0];
   
   const existing = await db
@@ -96,6 +102,9 @@ export async function saveDailySnapshot(
   data: SnapshotData,
   date?: Date
 ): Promise<{ isNew: boolean; snapshotId: number | null; skipped: boolean }> {
+  const db = getDb();
+  if (!db) throw new Error('Database not available');
+  
   const snapshotDate = date || new Date();
   const dateString = snapshotDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
@@ -188,6 +197,9 @@ export async function getHistoricalSnapshots(
   sdkId: number,
   days: number = 30
 ): Promise<typeof metricsSnapshots.$inferSelect[]> {
+  const db = getDb();
+  if (!db) return [];
+  
   return db
     .select()
     .from(metricsSnapshots)
@@ -202,6 +214,9 @@ export async function getHistoricalSnapshots(
 export async function getLatestSnapshot(
   sdkId: number
 ): Promise<typeof metricsSnapshots.$inferSelect | null> {
+  const db = getDb();
+  if (!db) return null;
+  
   const result = await db
     .select()
     .from(metricsSnapshots)

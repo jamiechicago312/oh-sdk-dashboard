@@ -113,7 +113,7 @@ The dashboard automatically collects metrics once per day at 6:00 AM UTC.
 ### Manual Trigger (Testing)
 
 ```bash
-curl -X POST https://your-app.vercel.app/api/cron/collect \
+curl -X POST https://oh-sdk-dashboard.vercel.app/api/cron/collect \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 

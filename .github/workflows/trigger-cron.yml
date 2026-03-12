@@ -4,9 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       vercel_deployment_url:
-        description: 'Vercel deployment URL (e.g., https://your-project.vercel.app)'
-        required: true
+        description: 'Vercel deployment URL'
+        required: false
         type: string
+        default: 'https://oh-sdk-dashboard.vercel.app'
 
 jobs:
   trigger-cron:
@@ -14,7 +15,5 @@ jobs:
     steps:
       - name: Trigger Vercel Cron
         run: |
-          curl -X GET "${{ inputs.vercel_deployment_url }}/api/cron/collect" \
+          curl -X POST "${{ inputs.vercel_deployment_url }}/api/cron/collect" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}

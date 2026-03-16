@@ -19,6 +19,7 @@ export function getDb() {
       _db = drizzle(client, { schema });
     } catch (error) {
       console.error('Failed to initialize database:', error);
+      console.error('DATABASE_URL value:', process.env.DATABASE_URL ? '***SET***' : '***NOT SET***');
       return null;
     }
   }

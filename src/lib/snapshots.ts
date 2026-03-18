@@ -1,7 +1,7 @@
 import { getDb } from './db';
 import { sdks, metricsSnapshots } from './schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { getAllGitHubMetrics } from './github';
+import { getAllGitHubMetrics, getDependentReposCount } from './github';
 import { getPyPIDownloads } from './pypi';
 import { SDK_CONFIG } from './sdk-config';
 
@@ -52,9 +52,10 @@ export async function getOrCreateSDK(): Promise<number> {
  * Collect current metrics from all APIs
  */
 export async function collectCurrentMetrics(): Promise<SnapshotData> {
-  const [github, pypi] = await Promise.all([
+  const [github, pypi, dependentRepos] = await Promise.all([
     getAllGitHubMetrics(SDK_CONFIG.github.owner, SDK_CONFIG.github.repo),
     getPyPIDownloads(SDK_CONFIG.pypi.package),
+    getDependentReposCount(SDK_CONFIG.pypi.package, null).catch(() => null),
   ]);
 
   return {
@@ -63,7 +64,7 @@ export async function collectCurrentMetrics(): Promise<SnapshotData> {
     githubActiveForks: github.activeForks,
     githubContributors: github.totalContributors,
     githubRepeatContributors: github.repeatContributors,
-    githubDependentRepos: null, // Not implemented yet
+    githubDependentRepos: dependentRepos,
     npmDownloadsWeekly: null, // Python SDK only
     pypiDownloadsWeekly: pypi.weeklyDownloads,
   };

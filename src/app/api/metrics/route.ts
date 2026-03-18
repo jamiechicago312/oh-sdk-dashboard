@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllGitHubMetrics } from '@/lib/github';
+import { getAllGitHubMetrics, getDependentReposCount } from '@/lib/github';
 import { getNpmDownloadsSafe } from '@/lib/npm';
 import { getPyPIDownloadsSafe } from '@/lib/pypi';
 
@@ -13,6 +13,7 @@ interface GitHubMetricsResponse {
   repeatContributorRatio: number;
   openIssues: number;
   watchers: number;
+  dependentRepos: number | null;
 }
 
 interface NpmMetricsResponse {
@@ -56,8 +57,11 @@ export async function GET(request: NextRequest) {
     const [owner, repo] = githubRepo.split('/');
     if (owner && repo) {
       promises.push(
-        getAllGitHubMetrics(owner, repo)
-          .then((metrics) => {
+        Promise.all([
+          getAllGitHubMetrics(owner, repo),
+          getDependentReposCount(pypiPackage, npmPackage).catch(() => null),
+        ])
+          .then(([metrics, dependentRepos]) => {
             response.github = {
               stars: metrics.stars,
               forks: metrics.forks,
@@ -68,6 +72,7 @@ export async function GET(request: NextRequest) {
               repeatContributorRatio: metrics.repeatContributorRatio,
               openIssues: metrics.openIssues,
               watchers: metrics.watchers,
+              dependentRepos,
             };
           })
           .catch((error) => {

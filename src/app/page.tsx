@@ -1,5 +1,5 @@
 import { SDK_CONFIG } from '@/lib/sdk-config';
-import { getAllGitHubMetrics } from '@/lib/github';
+import { getAllGitHubMetrics, getDependentReposCount } from '@/lib/github';
 import { getPyPIDownloads } from '@/lib/pypi';
 import { MetricsCard } from '@/components/metrics-card';
 import { RefreshCountdown } from '@/components/refresh-countdown';
@@ -9,14 +9,15 @@ import Link from 'next/link';
 
 async function getMetrics() {
   try {
-    const [github, pypi] = await Promise.all([
+    const [github, pypi, dependentRepos] = await Promise.all([
       getAllGitHubMetrics(SDK_CONFIG.github.owner, SDK_CONFIG.github.repo),
       getPyPIDownloads(SDK_CONFIG.pypi.package),
+      getDependentReposCount(SDK_CONFIG.pypi.package, null).catch(() => null),
     ]);
-    return { github, pypi, error: null };
+    return { github, pypi, dependentRepos, error: null };
   } catch (error) {
     console.error('Failed to fetch metrics:', error);
-    return { github: null, pypi: null, error: 'Failed to fetch metrics' };
+    return { github: null, pypi: null, dependentRepos: null, error: 'Failed to fetch metrics' };
   }
 }
 
@@ -24,7 +25,7 @@ async function getMetrics() {
 export const revalidate = 300;
 
 export default async function Home() {
-  const { github, pypi, error } = await getMetrics();
+  const { github, pypi, dependentRepos, error } = await getMetrics();
   const lastUpdated = new Date().toISOString();
 
   return (
@@ -116,6 +117,18 @@ export default async function Home() {
             value={github?.openIssues ?? '--'} 
             icon="🐛"
             loading={!github && !error}
+          />
+        </div>
+
+        {/* Package Ecosystem */}
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">📦 Package Ecosystem</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <MetricsCard
+            title="Dependent Repos"
+            value={dependentRepos ?? '--'}
+            icon="🔗"
+            subtitle="repos using this SDK"
+            loading={dependentRepos === null && !error}
           />
         </div>
 

@@ -227,3 +227,31 @@ export async function getLatestSnapshot(
 
   return result[0] || null;
 }
+
+export interface StoredDependentRepos {
+  count: number | null;
+  /** ISO date string (YYYY-MM-DD) of the snapshot that produced this count */
+  date: string | null;
+}
+
+/**
+ * Return the dependent repos count that the daily cron job last wrote to the
+ * database, along with the snapshot date so the UI can show "updated [date]".
+ *
+ * This is intentionally a cheap DB read — the expensive GitHub Search API
+ * call only runs once per day inside collectCurrentMetrics() (the cron job).
+ * Returns { count: null, date: null } when the DB is unavailable or no
+ * snapshot exists yet.
+ */
+export async function getStoredDependentRepos(): Promise<StoredDependentRepos> {
+  try {
+    const sdkId = await getOrCreateSDK();
+    const snapshot = await getLatestSnapshot(sdkId);
+    return {
+      count: snapshot?.githubDependentRepos ?? null,
+      date: snapshot?.date ?? null,
+    };
+  } catch {
+    return { count: null, date: null };
+  }
+}

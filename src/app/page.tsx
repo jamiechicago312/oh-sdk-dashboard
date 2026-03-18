@@ -1,23 +1,43 @@
 import { SDK_CONFIG } from '@/lib/sdk-config';
-import { getAllGitHubMetrics, getDependentReposCount } from '@/lib/github';
+import { getAllGitHubMetrics } from '@/lib/github';
 import { getPyPIDownloads } from '@/lib/pypi';
+import { getStoredDependentRepos } from '@/lib/snapshots';
 import { MetricsCard } from '@/components/metrics-card';
 import { RefreshCountdown } from '@/components/refresh-countdown';
 import { TrendCharts } from '@/components/trend-charts';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 
+/**
+ * Format a YYYY-MM-DD snapshot date into a short readable label, e.g. "Mar 18".
+ * Parses the components directly to avoid UTC/local-time ambiguity.
+ */
+function formatSnapshotDate(date: string): string {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 async function getMetrics() {
   try {
-    const [github, pypi, dependentRepos] = await Promise.all([
+    const [github, pypi, storedDependents] = await Promise.all([
       getAllGitHubMetrics(SDK_CONFIG.github.owner, SDK_CONFIG.github.repo),
       getPyPIDownloads(SDK_CONFIG.pypi.package),
-      getDependentReposCount([...SDK_CONFIG.dependencySearches]).catch(() => null),
+      // Read from the daily DB snapshot — the expensive GitHub Search API call
+      // only runs once per day via the cron job (collectCurrentMetrics).
+      getStoredDependentRepos(),
     ]);
-    return { github, pypi, dependentRepos, error: null };
+    return { github, pypi, storedDependents, error: null };
   } catch (error) {
     console.error('Failed to fetch metrics:', error);
-    return { github: null, pypi: null, dependentRepos: null, error: 'Failed to fetch metrics' };
+    return {
+      github: null,
+      pypi: null,
+      storedDependents: { count: null, date: null },
+      error: 'Failed to fetch metrics',
+    };
   }
 }
 
@@ -25,7 +45,7 @@ async function getMetrics() {
 export const revalidate = 300;
 
 export default async function Home() {
-  const { github, pypi, dependentRepos, error } = await getMetrics();
+  const { github, pypi, storedDependents, error } = await getMetrics();
   const lastUpdated = new Date().toISOString();
 
   return (
@@ -125,10 +145,14 @@ export default async function Home() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <MetricsCard
             title="Dependent Repos"
-            value={dependentRepos ?? '--'}
+            value={storedDependents.count ?? '--'}
             icon="🔗"
-            subtitle="repos using this SDK"
-            loading={dependentRepos === null && !error}
+            subtitle={
+              storedDependents.date
+                ? `as of ${formatSnapshotDate(storedDependents.date)} · updated daily`
+                : 'updated daily via cron'
+            }
+            loading={false}
           />
         </div>
 

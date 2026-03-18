@@ -88,13 +88,21 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
 
       {/* Loading State */}
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">GitHub Stars Growth</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px] bg-muted animate-pulse rounded-lg" />
+              <div className="h-[250px] animate-pulse rounded-lg bg-muted" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Active Forks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[250px] animate-pulse rounded-lg bg-muted" />
             </CardContent>
           </Card>
           <Card>
@@ -102,7 +110,7 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
               <CardTitle className="text-base">PyPI Weekly Downloads</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px] bg-muted animate-pulse rounded-lg" />
+              <div className="h-[250px] animate-pulse rounded-lg bg-muted" />
             </CardContent>
           </Card>
         </div>

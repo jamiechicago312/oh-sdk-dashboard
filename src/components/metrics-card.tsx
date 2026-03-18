@@ -9,10 +9,10 @@ interface MetricsCardProps {
   highlight?: boolean;
 }
 
-export function MetricsCard({ 
-  title, 
-  value, 
-  subtitle, 
+export function MetricsCard({
+  title,
+  value,
+  subtitle,
   icon,
   loading = false,
   highlight = false,
@@ -20,21 +20,24 @@ export function MetricsCard({
   return (
     <Card className={highlight ? 'bg-gradient-to-br from-green-50 to-white' : ''}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           {icon && <span>{icon}</span>}
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+          <div className="space-y-3">
+            <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
+            {subtitle && <div className="h-3 w-32 animate-pulse rounded-md bg-muted/80" />}
+          </div>
         ) : (
           <>
             <div className={`text-2xl font-bold ${highlight ? 'text-green-600' : ''}`}>
               {typeof value === 'number' ? value.toLocaleString() : value}
             </div>
             {subtitle && (
-              <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
             )}
           </>
         )}

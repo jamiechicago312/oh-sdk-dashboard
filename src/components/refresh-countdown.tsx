@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface RefreshCountdownProps {
   lastUpdated: string;
@@ -8,10 +9,11 @@ interface RefreshCountdownProps {
 }
 
 export function RefreshCountdown({ lastUpdated, refreshInterval }: RefreshCountdownProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(refreshInterval);
 
   useEffect(() => {
-    // Calculate initial time remaining
     const lastUpdateTime = new Date(lastUpdated).getTime();
     const nextRefreshTime = lastUpdateTime + refreshInterval * 1000;
     const now = Date.now();
@@ -21,16 +23,18 @@ export function RefreshCountdown({ lastUpdated, refreshInterval }: RefreshCountd
     const interval = setInterval(() => {
       setSecondsUntilRefresh((prev) => {
         if (prev <= 1) {
-          // Trigger page refresh when countdown reaches 0
-          window.location.reload();
+          startTransition(() => {
+            router.refresh();
+          });
           return refreshInterval;
         }
+
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [lastUpdated, refreshInterval]);
+  }, [lastUpdated, refreshInterval, router, startTransition]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -40,11 +44,9 @@ export function RefreshCountdown({ lastUpdated, refreshInterval }: RefreshCountd
 
   return (
     <div className="flex items-center gap-3 text-sm text-muted-foreground">
-      <span>
-        Updated: {new Date(lastUpdated).toLocaleTimeString()}
-      </span>
-      <span className="text-xs bg-muted px-2 py-1 rounded-full">
-        ↻ {formatTime(secondsUntilRefresh)}
+      <span>Updated: {new Date(lastUpdated).toLocaleTimeString()}</span>
+      <span className="rounded-full bg-muted px-2 py-1 text-xs">
+        {isPending ? '↻ Refreshing…' : `↻ ${formatTime(secondsUntilRefresh)}`}
       </span>
     </div>
   );

@@ -24,4 +24,5 @@ npm test             # Run Vitest suite
 ## Notes
 - Path alias `@/*` maps to `src/*`.
 - `DATABASE_URL` is optional for local test runs; snapshot fallback tests pass without it.
+- Dashboard route-level loading UI lives in `src/app/loading.tsx` and reuses `src/components/dashboard-skeleton.tsx`.
 - CI should run `npm run lint` and `npm test` on pull requests and pushes to `main`.

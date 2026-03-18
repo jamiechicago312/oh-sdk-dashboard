@@ -43,13 +43,21 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
       setError(null);
       try {
         const response = await fetch(`/api/history?period=${period}`);
+        const payload = await response.json().catch(() => null);
+
         if (!response.ok) {
-          throw new Error('Failed to fetch history data');
+          throw new Error(
+            payload?.error ?? payload?.message ?? 'Historical charts are temporarily unavailable.'
+          );
         }
-        const data = await response.json();
-        setHistoryData(data);
+
+        setHistoryData(payload);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Historical charts are temporarily unavailable.'
+        );
       } finally {
         setLoading(false);
       }
@@ -79,9 +87,13 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
 
       {/* Error State */}
       {error && (
-        <Card className="border-destructive">
+        <Card className="border-amber-300 bg-amber-50">
           <CardContent className="pt-6">
-            <p className="text-destructive">Error: {error}</p>
+            <p className="font-medium text-amber-950">Historical charts are temporarily unavailable.</p>
+            <p className="mt-2 text-sm text-amber-900">{error}</p>
+            <p className="mt-2 text-sm text-amber-900">
+              The rest of the dashboard is still available, and charts will retry on the next refresh.
+            </p>
           </CardContent>
         </Card>
       )}

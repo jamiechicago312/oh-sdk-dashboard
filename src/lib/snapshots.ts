@@ -251,7 +251,11 @@ export async function getStoredDependentRepos(): Promise<StoredDependentRepos> {
       count: snapshot?.githubDependentRepos ?? null,
       date: snapshot?.date ?? null,
     };
-  } catch {
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== 'Database not available') {
+      console.error('[Dashboard] Failed to read stored dependent repos snapshot:', error);
+    }
+
     return { count: null, date: null };
   }
 }

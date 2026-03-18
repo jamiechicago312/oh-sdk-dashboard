@@ -2,6 +2,7 @@ import { SDK_CONFIG } from '@/lib/sdk-config';
 import { getAllGitHubMetrics } from '@/lib/github';
 import { getPyPIDownloads } from '@/lib/pypi';
 import { getStoredDependentRepos } from '@/lib/snapshots';
+import { getErrorDetails, resolveDashboardSource } from '@/lib/dashboard';
 import { MetricsCard } from '@/components/metrics-card';
 import { RefreshCountdown } from '@/components/refresh-countdown';
 import { TrendCharts } from '@/components/trend-charts';
@@ -21,31 +22,59 @@ function formatSnapshotDate(date: string): string {
 }
 
 async function getMetrics() {
-  try {
-    const [github, pypi, storedDependents] = await Promise.all([
-      getAllGitHubMetrics(SDK_CONFIG.github.owner, SDK_CONFIG.github.repo),
-      getPyPIDownloads(SDK_CONFIG.pypi.package),
-      // Read from the daily DB snapshot — the expensive GitHub Search API call
-      // only runs once per day via the cron job (collectCurrentMetrics).
-      getStoredDependentRepos(),
-    ]);
-    return { github, pypi, storedDependents, error: null };
-  } catch (error) {
-    console.error('Failed to fetch metrics:', error);
-    return {
-      github: null,
-      pypi: null,
-      storedDependents: { count: null, date: null },
-      error: 'Failed to fetch metrics',
-    };
+  const [githubResult, pypiResult, storedDependentsResult] = await Promise.allSettled([
+    getAllGitHubMetrics(SDK_CONFIG.github.owner, SDK_CONFIG.github.repo),
+    getPyPIDownloads(SDK_CONFIG.pypi.package),
+    // Read from the daily DB snapshot — the expensive GitHub Search API call
+    // only runs once per day via the cron job (collectCurrentMetrics).
+    getStoredDependentRepos(),
+  ]);
+
+  const github = resolveDashboardSource('GitHub', githubResult);
+  const pypi = resolveDashboardSource('PyPI', pypiResult);
+
+  if (github.errorDetails) {
+    console.error('[Dashboard] Failed to fetch GitHub metrics', {
+      repo: `${SDK_CONFIG.github.owner}/${SDK_CONFIG.github.repo}`,
+      error: github.errorDetails,
+    });
   }
+
+  if (pypi.errorDetails) {
+    console.error('[Dashboard] Failed to fetch PyPI metrics', {
+      package: SDK_CONFIG.pypi.package,
+      error: pypi.errorDetails,
+    });
+  }
+
+  const storedDependents =
+    storedDependentsResult.status === 'fulfilled'
+      ? storedDependentsResult.value
+      : { count: null, date: null };
+
+  const sectionErrors = [github.error, pypi.error].filter(
+    (message): message is string => Boolean(message)
+  );
+
+  if (storedDependentsResult.status === 'rejected') {
+    console.error('[Dashboard] Failed to fetch stored dependent repo snapshot', {
+      error: getErrorDetails(storedDependentsResult.reason),
+    });
+  }
+
+  return {
+    github,
+    pypi,
+    storedDependents,
+    sectionErrors,
+  };
 }
 
 // Revalidate every 5 minutes (server-side cache only, not DB writes)
 export const revalidate = 300;
 
 export default async function Home() {
-  const { github, pypi, storedDependents, error } = await getMetrics();
+  const { github, pypi, storedDependents, sectionErrors } = await getMetrics();
   const lastUpdated = new Date().toISOString();
 
   return (
@@ -88,55 +117,67 @@ export default async function Home() {
           </CardContent>
         </Card>
 
-        {error && (
-          <Card className="mb-8 border-destructive">
+        {sectionErrors.length > 0 && (
+          <Card className="mb-8 border-amber-300 bg-amber-50">
             <CardContent className="pt-6">
-              <p className="text-destructive">{error}</p>
+              <p className="font-medium text-amber-950">
+                Some dashboard data is temporarily unavailable.
+              </p>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-amber-900">
+                {sectionErrors.map((message) => (
+                  <li key={message}>{message}</li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         )}
 
         {/* GitHub Metrics */}
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">📊 GitHub Metrics</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <MetricsCard 
-            title="Stars" 
-            value={github?.stars ?? '--'} 
+        <h2 className="mb-4 text-lg font-semibold text-gray-700">📊 GitHub Metrics</h2>
+        {github.error && (
+          <Card className="mb-4 border-amber-300 bg-amber-50">
+            <CardContent className="pt-6">
+              <p className="text-sm text-amber-900">{github.error}</p>
+            </CardContent>
+          </Card>
+        )}
+        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+          <MetricsCard
+            title="Stars"
+            value={github.data?.stars ?? '--'}
             icon="⭐"
-            loading={!github && !error}
           />
-          <MetricsCard 
-            title="Forks" 
-            value={github?.forks ?? '--'} 
+          <MetricsCard
+            title="Forks"
+            value={github.data?.forks ?? '--'}
             icon="🍴"
-            loading={!github && !error}
           />
-          <MetricsCard 
-            title="Active Forks" 
-            value={github?.activeForks ?? '--'} 
+          <MetricsCard
+            title="Active Forks"
+            value={github.data?.activeForks ?? '--'}
             icon="🔥"
             subtitle="with commits"
-            loading={!github && !error}
           />
-          <MetricsCard 
-            title="Contributors" 
-            value={github?.totalContributors ?? '--'} 
+          <MetricsCard
+            title="Contributors"
+            value={github.data?.totalContributors ?? '--'}
             icon="👥"
             subtitle="total"
-            loading={!github && !error}
           />
-          <MetricsCard 
-            title="Repeat Contributors" 
-            value={github?.repeatContributors ?? '--'} 
+          <MetricsCard
+            title="Repeat Contributors"
+            value={github.data?.repeatContributors ?? '--'}
             icon="🔁"
-            subtitle={github ? `${Math.round(github.repeatContributorRatio * 100)}% of ${github.totalContributors} contributors` : '2+ commits'}
-            loading={!github && !error}
+            subtitle={
+              github.data
+                ? `${Math.round(github.data.repeatContributorRatio * 100)}% of ${github.data.totalContributors} contributors`
+                : '2+ commits'
+            }
           />
-          <MetricsCard 
-            title="Open Issues" 
-            value={github?.openIssues ?? '--'} 
+          <MetricsCard
+            title="Open Issues"
+            value={github.data?.openIssues ?? '--'}
             icon="🐛"
-            loading={!github && !error}
           />
         </div>
 
@@ -157,31 +198,34 @@ export default async function Home() {
         </div>
 
         {/* PyPI Metrics */}
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">🐍 PyPI Downloads</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <MetricsCard 
-            title="Weekly Downloads" 
-            value={pypi?.weeklyDownloads ?? '--'} 
+        <h2 className="mb-4 text-lg font-semibold text-gray-700">🐍 PyPI Downloads</h2>
+        {pypi.error && (
+          <Card className="mb-4 border-amber-300 bg-amber-50">
+            <CardContent className="pt-6">
+              <p className="text-sm text-amber-900">{pypi.error}</p>
+            </CardContent>
+          </Card>
+        )}
+        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <MetricsCard
+            title="Weekly Downloads"
+            value={pypi.data?.weeklyDownloads ?? '--'}
             icon="📈"
-            loading={!pypi && !error}
           />
-          <MetricsCard 
-            title="Daily Downloads" 
-            value={pypi?.dailyDownloads ?? '--'} 
+          <MetricsCard
+            title="Daily Downloads"
+            value={pypi.data?.dailyDownloads ?? '--'}
             icon="📅"
-            loading={!pypi && !error}
           />
-          <MetricsCard 
-            title="Last 30 Days" 
-            value={pypi?.monthlyDownloads ?? '--'} 
+          <MetricsCard
+            title="Last 30 Days"
+            value={pypi.data?.monthlyDownloads ?? '--'}
             icon="📆"
-            loading={!pypi && !error}
           />
-          <MetricsCard 
-            title="All Time" 
-            value={pypi?.allTimeDownloads ?? '--'} 
+          <MetricsCard
+            title="All Time"
+            value={pypi.data?.allTimeDownloads ?? '--'}
             icon="🏆"
-            loading={!pypi && !error}
           />
         </div>
 

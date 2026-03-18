@@ -56,10 +56,17 @@ export async function GET(request: NextRequest) {
   if (githubRepo) {
     const [owner, repo] = githubRepo.split('/');
     if (owner && repo) {
+      // Build generic search queries from whatever package params are provided.
+      // Callers that want the curated SDK-specific searches should use the
+      // dashboard directly; this endpoint stays package-agnostic.
+      const dependencyQueries: string[] = [];
+      if (pypiPackage) dependencyQueries.push(`"${pypiPackage}"`);
+      if (npmPackage) dependencyQueries.push(`"${npmPackage}" filename:package.json`);
+
       promises.push(
         Promise.all([
           getAllGitHubMetrics(owner, repo),
-          getDependentReposCount(pypiPackage, npmPackage).catch(() => null),
+          getDependentReposCount(dependencyQueries).catch(() => null),
         ])
           .then(([metrics, dependentRepos]) => {
             response.github = {

@@ -284,38 +284,32 @@ export function countUniqueDependentRepos(items: GitHubSearchItem[]): number {
 }
 
 /**
- * Fetch the number of public repositories that depend on the given packages
- * by searching GitHub code for the package name in common dependency files.
+ * Fetch the number of public repositories that reference the SDK,
+ * using one or more raw GitHub code-search query strings.
  *
- * - PyPI: searches requirements.txt, pyproject.toml
- * - npm:  searches package.json
+ * Results from all queries are combined and deduplicated by repository ID
+ * before counting, so a repo that matches multiple queries is only counted once.
  *
- * Results are cached for DEPENDENT_REPOS_CACHE_TTL_MS (1 hour) to avoid
- * exhausting the Search API's 30 req/min rate limit.
+ * Results are cached for DEPENDENT_REPOS_CACHE_TTL_MS (1 hour) to stay well
+ * within the Search API's 30 req/min rate limit.
+ *
+ * @param queries - GitHub code-search query strings exactly as you would type
+ *                  them in the GitHub search box (e.g.
+ *                  '"software-agent-sdk" -org:OpenHands -is:fork').
+ *                  Pass an empty array to skip the fetch and return 0.
  */
-export async function getDependentReposCount(
-  pypiPackage: string | null,
-  npmPackage: string | null
-): Promise<number> {
-  const cacheKey = `dependents:pypi=${pypiPackage ?? ''}:npm=${npmPackage ?? ''}`;
+export async function getDependentReposCount(queries: string[]): Promise<number> {
+  if (queries.length === 0) return 0;
+
+  // Sort queries for a stable, order-independent cache key
+  const cacheKey = `dependents:${[...queries].sort().join('|')}`;
   const cached = getCacheEntry<number>(cacheKey);
   if (cached !== null) return cached;
 
   const allItems: GitHubSearchItem[] = [];
 
-  if (pypiPackage) {
-    const pypiFilenames = ['requirements.txt', 'pyproject.toml'];
-    for (const filename of pypiFilenames) {
-      const q = encodeURIComponent(`${pypiPackage} filename:${filename}`);
-      const items = await fetchSearchPages<GitHubSearchItem>(
-        `${GITHUB_API_BASE}/search/code?q=${q}`
-      );
-      allItems.push(...items);
-    }
-  }
-
-  if (npmPackage) {
-    const q = encodeURIComponent(`${npmPackage} filename:package.json`);
+  for (const query of queries) {
+    const q = encodeURIComponent(query);
     const items = await fetchSearchPages<GitHubSearchItem>(
       `${GITHUB_API_BASE}/search/code?q=${q}`
     );

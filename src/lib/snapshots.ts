@@ -55,7 +55,7 @@ export async function collectCurrentMetrics(): Promise<SnapshotData> {
   const [github, pypi, dependentRepos] = await Promise.all([
     getAllGitHubMetrics(SDK_CONFIG.github.owner, SDK_CONFIG.github.repo),
     getPyPIDownloads(SDK_CONFIG.pypi.package),
-    getDependentReposCount(SDK_CONFIG.pypi.package, null).catch(() => null),
+    getDependentReposCount([...SDK_CONFIG.dependencySearches]).catch(() => null),
   ]);
 
   return {

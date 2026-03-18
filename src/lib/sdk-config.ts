@@ -11,4 +11,19 @@ export const SDK_CONFIG = {
     url: 'https://pypi.org/project/openhands-sdk/',
   },
   npm: null, // Python SDK - no npm package
+  /**
+   * GitHub code-search queries used to count dependent repositories.
+   *
+   * Two complementary signals:
+   * 1. Repos that declare the SDK as a dependency (any package manager,
+   *    including Poetry which uses the dist-name "software-agent-sdk").
+   * 2. Repos that import directly from the SDK's Python module path.
+   *
+   * Both queries exclude the OpenHands org and the SDK's own repo to avoid
+   * self-referential noise.
+   */
+  dependencySearches: [
+    '"software-agent-sdk" -org:OpenHands -is:fork',
+    '"from openhands.sdk" NOT repo:OpenHands/OpenHands-CLI NOT repo:OpenHands/software-agent-sdk',
+  ],
 } as const;

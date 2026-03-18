@@ -94,20 +94,35 @@ describe('dependent repos cache integration', () => {
     clearCache();
   });
 
-  it('stores and retrieves a dependent repos count', () => {
-    const cacheKey = 'dependents:pypi=openhands-sdk:npm=';
-    setCacheEntry(cacheKey, 17);
-    expect(getCacheEntry<number>(cacheKey)).toBe(17);
+  it('stores and retrieves a dependent repos count under the query-based key', () => {
+    // Mirrors the key format getDependentReposCount uses internally:
+    // sorted queries joined with '|'
+    const queries = [
+      '"software-agent-sdk" -org:OpenHands -is:fork',
+      '"from openhands.sdk" NOT repo:OpenHands/software-agent-sdk',
+    ];
+    const cacheKey = `dependents:${[...queries].sort().join('|')}`;
+    setCacheEntry(cacheKey, 42);
+    expect(getCacheEntry<number>(cacheKey)).toBe(42);
   });
 
   it('returns null for a missing dependent repos cache entry', () => {
-    expect(getCacheEntry('dependents:pypi=unknown-pkg:npm=')).toBeNull();
+    expect(getCacheEntry('dependents:"no-such-query"')).toBeNull();
   });
 
   it('returns 0 as a cached value (falsy but valid)', () => {
-    const cacheKey = 'dependents:pypi=new-sdk:npm=';
+    // getDependentReposCount uses strict !== null check so 0 must round-trip
+    const cacheKey = 'dependents:"new-package"';
     setCacheEntry(cacheKey, 0);
-    // getCacheEntry must return 0, not null, even though 0 is falsy
     expect(getCacheEntry<number>(cacheKey)).toBe(0);
+  });
+
+  it('produces the same cache key regardless of query order', () => {
+    const q1 = '"software-agent-sdk" -org:OpenHands';
+    const q2 = '"from openhands.sdk"';
+    // Both orderings must produce the same sorted key
+    const key1 = `dependents:${[q1, q2].sort().join('|')}`;
+    const key2 = `dependents:${[q2, q1].sort().join('|')}`;
+    expect(key1).toBe(key2);
   });
 });

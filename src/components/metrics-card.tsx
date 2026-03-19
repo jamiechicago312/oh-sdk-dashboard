@@ -18,7 +18,7 @@ export function MetricsCard({
   highlight = false,
 }: MetricsCardProps) {
   return (
-    <Card className={highlight ? 'bg-gradient-to-br from-green-50 to-white' : ''}>
+    <Card className={highlight ? 'bg-gradient-to-br from-green-50 to-background dark:from-green-950 dark:to-background' : ''}>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           {icon && <span>{icon}</span>}

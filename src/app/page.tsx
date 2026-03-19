@@ -6,6 +6,7 @@ import { getErrorDetails, resolveDashboardSource } from '@/lib/dashboard';
 import { MetricsCard } from '@/components/metrics-card';
 import { RefreshCountdown } from '@/components/refresh-countdown';
 import { TrendCharts } from '@/components/trend-charts';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 
@@ -78,12 +79,15 @@ export default async function Home() {
   const lastUpdated = new Date().toISOString();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6 sm:py-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">{SDK_CONFIG.name}</h1>
-          <p className="text-indigo-200 mt-2 text-sm sm:text-base">{SDK_CONFIG.description}</p>
+        <div className="max-w-7xl mx-auto flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white sm:text-3xl">{SDK_CONFIG.name}</h1>
+            <p className="text-indigo-200 mt-2 text-sm sm:text-base">{SDK_CONFIG.description}</p>
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -133,7 +137,7 @@ export default async function Home() {
         )}
 
         {/* GitHub Metrics */}
-        <h2 className="mb-4 text-lg font-semibold text-gray-700">📊 GitHub Metrics</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">📊 GitHub Metrics</h2>
         {github.error && (
           <Card className="mb-4 border-amber-300 bg-amber-50">
             <CardContent className="pt-6">
@@ -182,7 +186,7 @@ export default async function Home() {
         </div>
 
         {/* Package Ecosystem */}
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">📦 Package Ecosystem</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">📦 Package Ecosystem</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <MetricsCard
             title="Dependent Repos"
@@ -198,7 +202,7 @@ export default async function Home() {
         </div>
 
         {/* PyPI Metrics */}
-        <h2 className="mb-4 text-lg font-semibold text-gray-700">🐍 PyPI Downloads</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">🐍 PyPI Downloads</h2>
         {pypi.error && (
           <Card className="mb-4 border-amber-300 bg-amber-50">
             <CardContent className="pt-6">
@@ -230,7 +234,7 @@ export default async function Home() {
         </div>
 
         {/* Charts */}
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">📈 Trends Over Time</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">📈 Trends Over Time</h2>
         <TrendCharts initialPeriod={30} />
       </main>
 

@@ -16,7 +16,7 @@ function ChartSkeletonCard({ title }: { title: string }) {
 
 export function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <header className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-7xl space-y-3">
           <div className="h-8 w-56 animate-pulse rounded-md bg-white/25 sm:h-9 sm:w-72" />
@@ -40,7 +40,7 @@ export function DashboardSkeleton() {
           </CardContent>
         </Card>
 
-        <h2 className="mb-4 text-lg font-semibold text-gray-700">📊 GitHub Metrics</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">📊 GitHub Metrics</h2>
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           <MetricsCard title="Stars" value="--" icon="⭐" loading />
           <MetricsCard title="Forks" value="--" icon="🍴" loading />
@@ -50,7 +50,7 @@ export function DashboardSkeleton() {
           <MetricsCard title="Open Issues" value="--" icon="🐛" loading />
         </div>
 
-        <h2 className="mb-4 text-lg font-semibold text-gray-700">📦 Package Ecosystem</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">📦 Package Ecosystem</h2>
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           <MetricsCard
             title="Dependent Repos"
@@ -61,7 +61,7 @@ export function DashboardSkeleton() {
           />
         </div>
 
-        <h2 className="mb-4 text-lg font-semibold text-gray-700">🐍 PyPI Downloads</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">🐍 PyPI Downloads</h2>
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           <MetricsCard title="Weekly Downloads" value="--" icon="📈" loading />
           <MetricsCard title="Daily Downloads" value="--" icon="📅" loading />
@@ -69,7 +69,7 @@ export function DashboardSkeleton() {
           <MetricsCard title="All Time" value="--" icon="🏆" loading />
         </div>
 
-        <h2 className="mb-4 text-lg font-semibold text-gray-700">📈 Trends Over Time</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">📈 Trends Over Time</h2>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <div className="h-9 w-16 animate-pulse rounded-md bg-muted" />

@@ -58,21 +58,23 @@ export function TrendChart({
   const renderChart = () => {
     const chartData = [...data].reverse(); // Oldest to newest
 
+    const axisProps = {
+      tick: { fontSize: 11 },
+      stroke: '#9ca3af',
+    };
+
+    const yAxisProps = {
+      ...axisProps,
+      tickFormatter: formatValue,
+      width: 55,
+    };
+
     if (chartType === 'bar') {
       return (
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis
-            dataKey="date"
-            tickFormatter={formatDate}
-            tick={{ fontSize: 12 }}
-            stroke="#9ca3af"
-          />
-          <YAxis
-            tickFormatter={formatValue}
-            tick={{ fontSize: 12 }}
-            stroke="#9ca3af"
-          />
+          <XAxis dataKey="date" tickFormatter={formatDate} {...axisProps} />
+          <YAxis {...yAxisProps} />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey={dataKey} fill={color} radius={[4, 4, 0, 0]} />
         </BarChart>
@@ -83,17 +85,8 @@ export function TrendChart({
       return (
         <AreaChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis
-            dataKey="date"
-            tickFormatter={formatDate}
-            tick={{ fontSize: 12 }}
-            stroke="#9ca3af"
-          />
-          <YAxis
-            tickFormatter={formatValue}
-            tick={{ fontSize: 12 }}
-            stroke="#9ca3af"
-          />
+          <XAxis dataKey="date" tickFormatter={formatDate} {...axisProps} />
+          <YAxis {...yAxisProps} />
           <Tooltip content={<CustomTooltip />} />
           <Area
             type="monotone"
@@ -110,17 +103,8 @@ export function TrendChart({
     return (
       <LineChart data={chartData}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis
-          dataKey="date"
-          tickFormatter={formatDate}
-          tick={{ fontSize: 12 }}
-          stroke="#9ca3af"
-        />
-        <YAxis
-          tickFormatter={formatValue}
-          tick={{ fontSize: 12 }}
-          stroke="#9ca3af"
-        />
+        <XAxis dataKey="date" tickFormatter={formatDate} {...axisProps} />
+        <YAxis {...yAxisProps} />
         <Tooltip content={<CustomTooltip />} />
         <Line
           type="monotone"
@@ -135,7 +119,7 @@ export function TrendChart({
   };
 
   return (
-    <div className="h-[250px] w-full">
+    <div className="h-[200px] w-full sm:h-[250px]">
       <ResponsiveContainer width="100%" height="100%">
         {renderChart()}
       </ResponsiveContainer>

@@ -8,7 +8,7 @@ function ChartSkeletonCard({ title }: { title: string }) {
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[250px] animate-pulse rounded-lg bg-muted" />
+        <div className="h-[200px] animate-pulse rounded-lg bg-muted sm:h-[250px]" />
       </CardContent>
     </Card>
   );
@@ -17,14 +17,14 @@ function ChartSkeletonCard({ title }: { title: string }) {
 export function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-8">
+      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-7xl space-y-3">
-          <div className="h-9 w-72 animate-pulse rounded-md bg-white/25" />
-          <div className="h-5 max-w-2xl animate-pulse rounded-md bg-white/15" />
+          <div className="h-8 w-56 animate-pulse rounded-md bg-white/25 sm:h-9 sm:w-72" />
+          <div className="h-4 max-w-2xl animate-pulse rounded-md bg-white/15 sm:h-5" />
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <Card className="mb-8">
           <CardContent className="pt-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -71,7 +71,7 @@ export function DashboardSkeleton() {
 
         <h2 className="mb-4 text-lg font-semibold text-gray-700">📈 Trends Over Time</h2>
         <div className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <div className="h-9 w-16 animate-pulse rounded-md bg-muted" />
             <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
             <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />

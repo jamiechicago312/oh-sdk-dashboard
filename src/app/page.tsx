@@ -80,19 +80,19 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-8">
+      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6 sm:py-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-white">{SDK_CONFIG.name}</h1>
-          <p className="text-indigo-200 mt-2">{SDK_CONFIG.description}</p>
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">{SDK_CONFIG.name}</h1>
+          <p className="text-indigo-200 mt-2 text-sm sm:text-base">{SDK_CONFIG.description}</p>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         {/* SDK Info Banner */}
         <Card className="mb-8">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex gap-6 text-sm">
+              <div className="flex flex-wrap gap-3 text-sm sm:gap-6">
                 <Link 
                   href={SDK_CONFIG.github.url}
                   target="_blank"

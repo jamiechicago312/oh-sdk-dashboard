@@ -33,7 +33,7 @@ export function MetricsCard({
           </div>
         ) : (
           <>
-            <div className={`text-2xl font-bold ${highlight ? 'text-green-600' : ''}`}>
+            <div className={`text-xl font-bold sm:text-2xl ${highlight ? 'text-green-600' : ''}`}>
               {typeof value === 'number' ? value.toLocaleString() : value}
             </div>
             {subtitle && (

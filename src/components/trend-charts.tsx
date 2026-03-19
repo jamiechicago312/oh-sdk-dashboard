@@ -72,7 +72,7 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
   return (
     <div className="space-y-4">
       {/* Time Period Selector */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {PERIODS.map((p) => (
           <Button
             key={p.value}
@@ -106,7 +106,7 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
               <CardTitle className="text-base">GitHub Stars Growth</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px] animate-pulse rounded-lg bg-muted" />
+              <div className="h-[200px] animate-pulse rounded-lg bg-muted sm:h-[250px]" />
             </CardContent>
           </Card>
           <Card>
@@ -114,7 +114,7 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
               <CardTitle className="text-base">Active Forks</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px] animate-pulse rounded-lg bg-muted" />
+              <div className="h-[200px] animate-pulse rounded-lg bg-muted sm:h-[250px]" />
             </CardContent>
           </Card>
           <Card>
@@ -122,7 +122,7 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
               <CardTitle className="text-base">PyPI Weekly Downloads</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px] animate-pulse rounded-lg bg-muted" />
+              <div className="h-[200px] animate-pulse rounded-lg bg-muted sm:h-[250px]" />
             </CardContent>
           </Card>
         </div>

@@ -24,6 +24,6 @@ export const SDK_CONFIG = {
    */
   dependencySearches: [
     '"software-agent-sdk" -org:OpenHands -is:fork',
-    '"from openhands.sdk" NOT repo:OpenHands/OpenHands-CLI NOT repo:OpenHands/software-agent-sdk',
+    '"from openhands.sdk" -repo:OpenHands/OpenHands-CLI -repo:OpenHands/software-agent-sdk',
   ],
 } as const;

@@ -212,17 +212,17 @@ export default async function Home() {
         )}
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           <MetricsCard
-            title="Weekly Downloads"
-            value={pypi.data?.weeklyDownloads ?? '--'}
-            icon="📈"
-          />
-          <MetricsCard
-            title="Daily Downloads"
+            title="Daily"
             value={pypi.data?.dailyDownloads ?? '--'}
             icon="📅"
           />
           <MetricsCard
-            title="Last 30 Days"
+            title="7 Days"
+            value={pypi.data?.weeklyDownloads ?? '--'}
+            icon="📈"
+          />
+          <MetricsCard
+            title="30 Days"
             value={pypi.data?.monthlyDownloads ?? '--'}
             icon="📆"
           />

@@ -14,16 +14,23 @@ export const SDK_CONFIG = {
   /**
    * GitHub code-search queries used to count dependent repositories.
    *
-   * Two complementary signals:
-   * 1. Repos that declare the SDK as a dependency (any package manager,
-   *    including Poetry which uses the dist-name "software-agent-sdk").
-   * 2. Repos that import directly from the SDK's Python module path.
+   * All queries are scoped to package-dependency declaration files so that
+   * documentation, markdown notes, and unrelated source files do not inflate
+   * the count.  Three complementary signals cover the two common Python
+   * package managers:
    *
-   * Both queries exclude the OpenHands org and the SDK's own repo to avoid
-   * self-referential noise.
+   * 1. pip / uv / conda  — "openhands-sdk" in requirements.txt
+   * 2. Poetry / Hatch / PDM — "openhands-sdk" in pyproject.toml
+   * 3. Poetry git-source — "software-agent-sdk" in pyproject.toml
+   *    (Poetry uses the GitHub repo name, not the PyPI dist name, when the
+   *     dependency is declared as a git source)
+   *
+   * All three exclude the OpenHands org so the SDK's own repo and sibling
+   * projects are not counted.
    */
   dependencySearches: [
-    '"software-agent-sdk" -org:OpenHands -is:fork',
-    '"from openhands.sdk" NOT repo:OpenHands/OpenHands-CLI NOT repo:OpenHands/software-agent-sdk',
+    '"openhands-sdk" filename:requirements.txt -org:OpenHands',
+    '"openhands-sdk" filename:pyproject.toml -org:OpenHands',
+    '"software-agent-sdk" filename:pyproject.toml -org:OpenHands',
   ],
 } as const;

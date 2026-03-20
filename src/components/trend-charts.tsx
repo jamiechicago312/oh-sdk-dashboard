@@ -23,6 +23,8 @@ interface HistoryResponse {
 
 interface TrendChartsProps {
   initialPeriod?: number;
+  /** owner/repo string for the SDK whose history should be loaded. */
+  sdkRepo?: string;
 }
 
 const PERIODS = [
@@ -31,7 +33,7 @@ const PERIODS = [
   { value: 90, label: '90 days' },
 ];
 
-export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
+export function TrendCharts({ initialPeriod = 30, sdkRepo }: TrendChartsProps) {
   const [period, setPeriod] = useState(initialPeriod);
   const [historyData, setHistoryData] = useState<HistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,9 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/history?period=${period}`);
+        const params = new URLSearchParams({ period: String(period) });
+        if (sdkRepo) params.set('sdk', sdkRepo);
+        const response = await fetch(`/api/history?${params.toString()}`);
         const payload = await response.json().catch(() => null);
 
         if (!response.ok) {
@@ -64,7 +68,7 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
     }
 
     fetchHistory();
-  }, [period]);
+  }, [period, sdkRepo]);
 
   const hasInsufficientData = historyData && historyData.snapshotCount < 2;
   const hasNoData = !historyData || historyData.snapshotCount === 0;

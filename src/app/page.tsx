@@ -1,4 +1,4 @@
-import { SDK_CONFIG } from '@/lib/sdk-config';
+import { SDK_LIST, findSdkById, type SdkEntry } from '@/lib/sdk-config';
 import { getAllGitHubMetrics } from '@/lib/github';
 import { getPyPIDownloads } from '@/lib/pypi';
 import { getStoredDependentRepos } from '@/lib/snapshots';
@@ -7,6 +7,7 @@ import { MetricsCard } from '@/components/metrics-card';
 import { RefreshCountdown } from '@/components/refresh-countdown';
 import { TrendCharts } from '@/components/trend-charts';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { SdkSelector } from '@/components/sdk-selector';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 
@@ -22,13 +23,14 @@ function formatSnapshotDate(date: string): string {
   });
 }
 
-async function getMetrics() {
+async function getMetrics(sdk: SdkEntry) {
+  const githubRepo = `${sdk.github.owner}/${sdk.github.repo}`;
   const [githubResult, pypiResult, storedDependentsResult] = await Promise.allSettled([
-    getAllGitHubMetrics(SDK_CONFIG.github.owner, SDK_CONFIG.github.repo),
-    getPyPIDownloads(SDK_CONFIG.pypi.package),
+    getAllGitHubMetrics(sdk.github.owner, sdk.github.repo),
+    sdk.pypi ? getPyPIDownloads(sdk.pypi.package) : Promise.resolve(null),
     // Read from the daily DB snapshot — the expensive GitHub Search API call
     // only runs once per day via the cron job (collectCurrentMetrics).
-    getStoredDependentRepos(),
+    getStoredDependentRepos(githubRepo),
   ]);
 
   const github = resolveDashboardSource('GitHub', githubResult);
@@ -36,14 +38,14 @@ async function getMetrics() {
 
   if (github.errorDetails) {
     console.error('[Dashboard] Failed to fetch GitHub metrics', {
-      repo: `${SDK_CONFIG.github.owner}/${SDK_CONFIG.github.repo}`,
+      repo: githubRepo,
       error: github.errorDetails,
     });
   }
 
   if (pypi.errorDetails) {
     console.error('[Dashboard] Failed to fetch PyPI metrics', {
-      package: SDK_CONFIG.pypi.package,
+      package: sdk.pypi?.package,
       error: pypi.errorDetails,
     });
   }
@@ -74,9 +76,16 @@ async function getMetrics() {
 // Revalidate every 5 minutes (server-side cache only, not DB writes)
 export const revalidate = 300;
 
-export default async function Home() {
-  const { github, pypi, storedDependents, sectionErrors } = await getMetrics();
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const sdkId = typeof searchParams?.sdk === 'string' ? searchParams.sdk : undefined;
+  const selectedSdk = (sdkId && findSdkById(sdkId)) ?? SDK_LIST[0];
+  const { github, pypi, storedDependents, sectionErrors } = await getMetrics(selectedSdk);
   const lastUpdated = new Date().toISOString();
+  const sdkRepo = `${selectedSdk.github.owner}/${selectedSdk.github.repo}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -84,10 +93,13 @@ export default async function Home() {
       <header className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6 sm:py-8">
         <div className="max-w-7xl mx-auto flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white sm:text-3xl">{SDK_CONFIG.name}</h1>
-            <p className="text-indigo-200 mt-2 text-sm sm:text-base">{SDK_CONFIG.description}</p>
+            <h1 className="text-2xl font-bold text-white sm:text-3xl">{selectedSdk.name}</h1>
+            <p className="text-indigo-200 mt-2 text-sm sm:text-base">{selectedSdk.description}</p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <SdkSelector sdks={SDK_LIST} currentSdkId={selectedSdk.id} />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -98,23 +110,35 @@ export default async function Home() {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex flex-wrap gap-3 text-sm sm:gap-6">
                 <Link 
-                  href={SDK_CONFIG.github.url}
+                  href={selectedSdk.github.url}
                   target="_blank"
                   className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                   </svg>
-                  <span>{SDK_CONFIG.github.owner}/{SDK_CONFIG.github.repo}</span>
+                  <span>{selectedSdk.github.owner}/{selectedSdk.github.repo}</span>
                 </Link>
-                <Link 
-                  href={SDK_CONFIG.pypi.url}
-                  target="_blank"
-                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <span className="text-lg">🐍</span>
-                  <span>{SDK_CONFIG.pypi.package}</span>
-                </Link>
+                {selectedSdk.pypi && (
+                  <Link 
+                    href={selectedSdk.pypi.url}
+                    target="_blank"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <span className="text-lg">🐍</span>
+                    <span>{selectedSdk.pypi.package}</span>
+                  </Link>
+                )}
+                {selectedSdk.npm && (
+                  <Link
+                    href={selectedSdk.npm.url}
+                    target="_blank"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <span className="text-lg">📦</span>
+                    <span>{selectedSdk.npm.package}</span>
+                  </Link>
+                )}
               </div>
               <RefreshCountdown lastUpdated={lastUpdated} refreshInterval={300} />
             </div>
@@ -202,40 +226,44 @@ export default async function Home() {
         </div>
 
         {/* PyPI Metrics */}
-        <h2 className="mb-4 text-lg font-semibold text-foreground">🐍 PyPI Downloads</h2>
-        {pypi.error && (
-          <Card className="mb-4 border-amber-300 bg-amber-50">
-            <CardContent className="pt-6">
-              <p className="text-sm text-amber-900">{pypi.error}</p>
-            </CardContent>
-          </Card>
+        {selectedSdk.pypi && (
+          <>
+            <h2 className="mb-4 text-lg font-semibold text-foreground">🐍 PyPI Downloads</h2>
+            {pypi.error && (
+              <Card className="mb-4 border-amber-300 bg-amber-50">
+                <CardContent className="pt-6">
+                  <p className="text-sm text-amber-900">{pypi.error}</p>
+                </CardContent>
+              </Card>
+            )}
+            <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+              <MetricsCard
+                title="Weekly Downloads"
+                value={pypi.data?.weeklyDownloads ?? '--'}
+                icon="📈"
+              />
+              <MetricsCard
+                title="Daily Downloads"
+                value={pypi.data?.dailyDownloads ?? '--'}
+                icon="📅"
+              />
+              <MetricsCard
+                title="Last 30 Days"
+                value={pypi.data?.monthlyDownloads ?? '--'}
+                icon="📆"
+              />
+              <MetricsCard
+                title="All Time"
+                value={pypi.data?.allTimeDownloads ?? '--'}
+                icon="🏆"
+              />
+            </div>
+          </>
         )}
-        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <MetricsCard
-            title="Weekly Downloads"
-            value={pypi.data?.weeklyDownloads ?? '--'}
-            icon="📈"
-          />
-          <MetricsCard
-            title="Daily Downloads"
-            value={pypi.data?.dailyDownloads ?? '--'}
-            icon="📅"
-          />
-          <MetricsCard
-            title="Last 30 Days"
-            value={pypi.data?.monthlyDownloads ?? '--'}
-            icon="📆"
-          />
-          <MetricsCard
-            title="All Time"
-            value={pypi.data?.allTimeDownloads ?? '--'}
-            icon="🏆"
-          />
-        </div>
 
         {/* Charts */}
         <h2 className="text-lg font-semibold text-foreground mb-4">📈 Trends Over Time</h2>
-        <TrendCharts initialPeriod={30} />
+        <TrendCharts initialPeriod={30} sdkRepo={sdkRepo} />
       </main>
 
       {/* Footer */}

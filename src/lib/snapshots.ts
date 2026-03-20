@@ -242,10 +242,30 @@ export interface StoredDependentRepos {
  * call only runs once per day inside collectCurrentMetrics() (the cron job).
  * Returns { count: null, date: null } when the DB is unavailable or no
  * snapshot exists yet.
+ *
+ * @param githubRepo Optional "owner/repo" string. When provided the lookup
+ *   searches by that repo without creating a new SDK record (read-only).
+ *   When omitted the default SDK from SDK_CONFIG is used (and is created on
+ *   first access, as before).
  */
-export async function getStoredDependentRepos(): Promise<StoredDependentRepos> {
+export async function getStoredDependentRepos(
+  githubRepo?: string
+): Promise<StoredDependentRepos> {
   try {
-    const sdkId = await getOrCreateSDK();
+    let sdkId: number | null;
+    if (githubRepo) {
+      const db = getDb();
+      if (!db) return { count: null, date: null };
+      const rows = await db
+        .select({ id: sdks.id })
+        .from(sdks)
+        .where(eq(sdks.githubRepo, githubRepo))
+        .limit(1);
+      sdkId = rows[0]?.id ?? null;
+    } else {
+      sdkId = await getOrCreateSDK();
+    }
+    if (!sdkId) return { count: null, date: null };
     const snapshot = await getLatestSnapshot(sdkId);
     return {
       count: snapshot?.githubDependentRepos ?? null,

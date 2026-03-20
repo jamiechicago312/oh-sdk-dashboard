@@ -26,12 +26,12 @@ interface TrendChartsProps {
 }
 
 const PERIODS = [
-  { value: 7, label: '7 days' },
-  { value: 30, label: '30 days' },
-  { value: 90, label: '90 days' },
+  { value: 7, label: '7d', ariaLabel: '7 days' },
+  { value: 30, label: '30d', ariaLabel: '30 days' },
+  { value: 90, label: '90d', ariaLabel: '90 days' },
 ];
 
-export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
+export function TrendCharts({ initialPeriod = 7 }: TrendChartsProps) {
   const [period, setPeriod] = useState(initialPeriod);
   const [historyData, setHistoryData] = useState<HistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +78,8 @@ export function TrendCharts({ initialPeriod = 30 }: TrendChartsProps) {
             key={p.value}
             variant={period === p.value ? 'default' : 'outline'}
             size="sm"
+            aria-label={p.ariaLabel}
+            aria-pressed={period === p.value}
             onClick={() => setPeriod(p.value)}
           >
             {p.label}

@@ -235,7 +235,7 @@ export default async function Home() {
 
         {/* Charts */}
         <h2 className="text-lg font-semibold text-foreground mb-4">📈 Trends Over Time</h2>
-        <TrendCharts initialPeriod={30} />
+        <TrendCharts />
       </main>
 
       {/* Footer */}

@@ -26,4 +26,6 @@ npm test             # Run Vitest suite
 - `DATABASE_URL` is optional for local test runs; snapshot fallback tests pass without it.
 - Dashboard route-level loading UI lives in `src/app/loading.tsx` and reuses `src/components/dashboard-skeleton.tsx`.
 - Dashboard data fetching should prefer partial-failure handling (`Promise.allSettled`) so one upstream API outage does not blank the whole page.
+- PyPI metrics now use the ClickPy dashboard (`clickpy.clickhouse.com`) backed by ClickHouse instead of `pypistats.org`; `getPyPIDownloadsSafe` only checks `pypi.org/pypi/<package>/json` when ClickPy returns all-zero metrics so missing packages still resolve to `null`.
+
 - CI should run `npm run lint` and `npm test` on pull requests and pushes to `main`.
